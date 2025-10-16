@@ -11,7 +11,7 @@ import java.util.Map;
 @Configuration
 public class CloudinaryConfig {
 
-    @Bean(name = "imageUploader")
+    @Bean
     public Cloudinary getImageUpLoader(@Value("${cloudinary.name}") String cloudName, @Value("${cloudinary.key}") String apiKey,@Value("${cloudinary.secret}") String apiSecret){
 
         System.out.println("Cloudname: " + cloudName);
