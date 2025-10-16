@@ -10,6 +10,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,14 +27,14 @@ import java.util.UUID;
 @Slf4j
 public class AutoreService {
 
-    private static final long MAX_SIZE = 5*1024*1024; //5MB
+    private static final long MAX_SIZE = 5 * 1024 * 1024; //5MB
     private static final List<String> ALLOWED_TYPES = List.of("image/png", "image/jpeg");
 
 
     @Autowired
     private AutoreRepository autoreRepository;
     @Autowired
-    private Cloudinary getImageUpLoader;
+    private Cloudinary imageUploader;
 
     // 1.
     public Page<Autore> findAll(int numPage, int sizePage, String sortBy) {
@@ -74,7 +75,7 @@ public class AutoreService {
 
         Autore autoreFound = this.findAutoreById(idAutore);
 
-        if(!autoreFound.getEmail().equals(newBody.getEmail())){
+        if (!autoreFound.getEmail().equals(newBody.getEmail())) {
             this.autoreRepository.findByEmail(newBody.getEmail()).ifPresent(autore -> {
                 throw new BadRequestException("L'e-mail " + autore.getEmail() + " è già presente");
             });
@@ -95,16 +96,17 @@ public class AutoreService {
     // 5.
     public void findAutoreByIdAndDelete(UUID idAutore) {
 
-       Autore autoreFound = this.findAutoreById(idAutore);
-       this.autoreRepository.delete(autoreFound);
+        Autore autoreFound = this.findAutoreById(idAutore);
+        this.autoreRepository.delete(autoreFound);
     }
 
     // 6.
-    public Autore uploadAvatarImage(MultipartFile file, UUID authorId){
+    public Autore uploadAvatarImage(MultipartFile file, UUID authorId) {
 
-        if(file.isEmpty()) throw new BadRequestException("File vuoto!");
-        if(file.getSize()> MAX_SIZE) throw new BadRequestException("La dimensione del file supera quella massima!");
-        if(!(ALLOWED_TYPES.contains(file.getContentType())))throw new BadRequestException("Formato file permesso: .jpeg, .png");
+        if (file.isEmpty()) throw new BadRequestException("File vuoto!");
+        if (file.getSize() > MAX_SIZE) throw new BadRequestException("La dimensione del file supera quella massima!");
+        if (!(ALLOWED_TYPES.contains(file.getContentType())))
+            throw new BadRequestException("Formato file permesso: .jpeg, .png");
 
         // Controllo sull'esistenza dell'utente
         Autore autoreFound = this.findAutoreById(authorId);
@@ -112,18 +114,18 @@ public class AutoreService {
         try {
 
             //Catturo l'URL dell'immagine
-            Map resultMap = getImageUpLoader.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            Map resultMap = imageUploader.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             String imageAvatarUrl = (String) resultMap.get("url");
 
             //Salvataggio dell'URL nel DB
             autoreFound.setAvatar(imageAvatarUrl);
             this.autoreRepository.save(autoreFound);
+            return autoreFound;
 
-        }catch (IOException e){
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new BadRequestException("Errore nell'upload dell'immagine");
         }
 
-        return autoreFound;
     }
 
 }

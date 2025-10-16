@@ -64,7 +64,7 @@ public class AutoreController {
     //PATCH http://localhost:3004/authors/{authorsId}/avatar
     @PatchMapping("/{authorId}/avatar")
     public Autore uploadImageAvatar(@RequestParam("avatar") MultipartFile file, @PathVariable UUID authorId) throws IOException{
-        System.out.println(Arrays.toString(file.getBytes()));
+        System.out.println(file.getBytes());
         System.out.println(file.getOriginalFilename());
         return this.autoreService.uploadAvatarImage(file, authorId);
     }
