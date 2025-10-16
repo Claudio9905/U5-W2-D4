@@ -1,4 +1,4 @@
-# U5-W2-D3 (Continuo della repository U5-W2-D2)
+# U5-W2-D4 (Continuo della repository U5-W2-D2)
 Esercizi sull'uso di Spring Web e Postman. 
 Creazione di un set di WebApi di un'applicazione di blogging
 
