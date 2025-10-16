@@ -6,6 +6,8 @@ import claudiopostiglione.u5w2d4.exceptions.IdNotFoundException;
 import claudiopostiglione.u5w2d4.payloads.AutoreDTO;
 import claudiopostiglione.u5w2d4.payloads.AutorePayload;
 import claudiopostiglione.u5w2d4.repositories.AutoreRepository;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,15 +15,25 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class AutoreService {
 
+    private static final long MAX_SIZE = 5*1024*1024; //5MB
+    private static final List<String> ALLOWED_TYPES = List.of("image/png", "image/jpeg");
+
+
     @Autowired
     private AutoreRepository autoreRepository;
+    @Autowired
+    private Cloudinary getImageUpLoader;
 
     // 1.
     public Page<Autore> findAll(int numPage, int sizePage, String sortBy) {
@@ -86,4 +98,32 @@ public class AutoreService {
        Autore autoreFound = this.findAutoreById(idAutore);
        this.autoreRepository.delete(autoreFound);
     }
+
+    // 6.
+    public Autore uploadAvatarImage(MultipartFile file, UUID authorId){
+
+        if(file.isEmpty()) throw new BadRequestException("File vuoto!");
+        if(file.getSize()> MAX_SIZE) throw new BadRequestException("La dimensione del file supera quella massima!");
+        if(!(ALLOWED_TYPES.contains(file.getContentType())))throw new BadRequestException("Formato file permesso: .jpeg, .png");
+
+        // Controllo sull'esistenza dell'utente
+        Autore autoreFound = this.findAutoreById(authorId);
+
+        try {
+
+            //Catturo l'URL dell'immagine
+            Map resultMap = getImageUpLoader.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            String imageAvatarUrl = (String) resultMap.get("url");
+
+            //Salvataggio dell'URL nel DB
+            autoreFound.setAvatar(imageAvatarUrl);
+            this.autoreRepository.save(autoreFound);
+
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+
+        return autoreFound;
+    }
+
 }

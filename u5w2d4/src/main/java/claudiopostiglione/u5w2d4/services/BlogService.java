@@ -8,6 +8,8 @@ import claudiopostiglione.u5w2d4.payloads.BlogDTO;
 import claudiopostiglione.u5w2d4.payloads.BlogPayload;
 import claudiopostiglione.u5w2d4.repositories.AutoreRepository;
 import claudiopostiglione.u5w2d4.repositories.BlogRepository;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,12 +17,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 @Slf4j
 public class BlogService {
+
+    private static final long MAX_SIZE = 5*1024*1024; //5MB
+    private static final List<String> ALLOWED_TYPES = List.of("image/png", "image/jpeg");
+
 
     @Autowired
     private BlogRepository blogRepository;
@@ -30,6 +40,10 @@ public class BlogService {
 
     @Autowired
     private AutoreRepository autoreRepository;
+
+    @Autowired
+    private Cloudinary getImageUpLoader;
+
 
     // 1.
     public Page<Blog> findAll(int pageNumber, int pageSize, String sortBy) {
@@ -93,5 +107,32 @@ public class BlogService {
     public void findBlogByIdAndDelete(UUID idBlog) {
         Blog blogFound = this.findBlogById(idBlog);
         this.blogRepository.delete(blogFound);
+    }
+
+    // 6.
+    public Blog uploadCoverImage(MultipartFile file, UUID blogId){
+
+        if(file.isEmpty()) throw new BadRequestException("File vuoto!");
+        if(file.getSize()> MAX_SIZE) throw new BadRequestException("La dimensione del file supera quella massima!");
+        if(!(ALLOWED_TYPES.contains(file.getContentType())))throw new BadRequestException("Formato file permesso: .jpeg, .png");
+
+        // Controllo sull'esistenza dell'utente
+        Blog blogFound = this.findBlogById(blogId);
+
+        try {
+
+            //Catturo l'URL dell'immagine della cover
+            Map resultMap = getImageUpLoader.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            String imageCoverUrl = (String) resultMap.get("url");
+
+            //Salvataggio dell'URL nel DB
+            blogFound.setCover(imageCoverUrl);
+            this.blogRepository.save(blogFound);
+
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+
+        return blogFound;
     }
 }

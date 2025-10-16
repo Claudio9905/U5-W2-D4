@@ -11,7 +11,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.UUID;
 
 @RestController
@@ -21,19 +24,19 @@ public class AutoreController {
     @Autowired
     private AutoreService autoreService;
 
-    //1 GET http://localhost:3002/authors
+    //1 GET http://localhost:3004/authors
     @GetMapping
     public Page<Autore> getAuthors(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "id") String sortBy) {
         return this.autoreService.findAll(page, size, sortBy);
     }
 
-    // GET http://localhost:3002/authors/{authorsId}
+    // GET http://localhost:3004/authors/{authorsId}
     @GetMapping("/{authorId}")
     public Autore getAutoreById(@PathVariable UUID authorId) {
         return this.autoreService.findAutoreById(authorId);
     }
 
-    // POST http://localhost:3002/authors (+ payload)
+    // POST http://localhost:3004/authors (+ payload)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Autore createAutore(@RequestBody @Validated AutoreDTO body, BindingResult validationResult) {
@@ -45,17 +48,25 @@ public class AutoreController {
         return this.autoreService.saveAutore(body);
     }
 
-    // PUT http://localhost:3002/authors/{authorsId} (+ payload nuovo)
+    // PUT http://localhost:3004/authors/{authorsId} (+ payload nuovo)
     @PutMapping("/{authorId}")
     public Autore findAutoreAndUpdate(@PathVariable UUID authorId, @RequestBody AutorePayload newBody) {
         return this.autoreService.findAutoreByIdAndUpdate(authorId, newBody);
     }
 
-    // DELETE http://localhost:3002/authors/{authorsId}
+    // DELETE http://localhost:3004/authors/{authorsId}
     @DeleteMapping("{authorId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void findAutoreAndDelete(@PathVariable UUID authorId) {
         this.autoreService.findAutoreByIdAndDelete(authorId);
+    }
+
+    //PATCH http://localhost:3004/authors/{authorsId}/avatar
+    @PatchMapping("/{authorId}/avatar")
+    public Autore uploadImageAvatar(@RequestParam("avatar") MultipartFile file, @PathVariable UUID authorId) throws IOException{
+        System.out.println(Arrays.toString(file.getBytes()));
+        System.out.println(file.getOriginalFilename());
+        return this.autoreService.uploadAvatarImage(file, authorId);
     }
 
 }

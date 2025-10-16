@@ -1,5 +1,6 @@
 package claudiopostiglione.u5w2d4.payloads;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,7 +17,7 @@ public record AutoreDTO(
         @NotBlank(message = "L'email è obbligatoria")
         @Email(message = "L'indirizzo email inserito non è del formato corretto")
         String email,
-        @NotBlank(message = "La data di nascita è obbligatoria")
+        @JsonFormat(pattern = "yyyy-MM-dd")
         LocalDate dataDiNascita
 ) {
 }
